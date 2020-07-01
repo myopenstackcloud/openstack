@@ -1,5 +1,5 @@
 #!/bin/bash
-
+sudo su -
 yum update -y
 
 yum install -y python3
@@ -12,33 +12,40 @@ gdown   --id   1ZVs-pksddhB88xZZnLzHmUoYSE1AFnaB   --output    rhel-7.5-server-u
 
 gdown   --id   1xyPUYYVg-3mOPeu0t-9OoeJ5G3IOGpii    --output    RHEL7OSP-13.0-20180628.2-x86_64.iso
 
-mkdir /updates  /additional  /RHOSP
+mkdir /iso1  /iso2  /iso3
 
-mount -o loop rhel-7.5-server-updates-20180628.iso  /updates/
+mount  rhel-7.5-server-updates-20180628.iso  /iso1/
 
-mount -o loop rhel-7-server-additional-20180628.iso  /additional/
+mount   rhel-7-server-additional-20180628.iso  /iso2/
 
-mount -o loop RHEL7OSP-13.0-20180628.2-x86_64.iso /RHOSP/
+mount  RHEL7OSP-13.0-20180628.2-x86_64.iso /iso3/
 
-mkdir /RHOSP13
+mkdir /software
 
-cp -rvf /updates/  /RHOSP13/
+cp -rvf /iso1/*  /software/
 
-cp -rvf /additional/  /RHOSP13/
+cp -rvf /iso2/*  /software/
 
-cp -rvf /RHOSP/  /RHOSP13/
+cp -rvf /iso3/*  /software/
 
 yum install createrepo  -y
 
-createrepo -v /RHOSP13/.
+createrepo -v /software/.
 
 cat <<EOF > /etc/yum.repos.d/openstack.repo
 [Openstack]
 name=Openstack
-baseurl=file:///RHOSP13
+baseurl=file:///software
 gpgcheck=0
 EOF
 
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+systemctl stop firewalld
+echo redhat | passwd  --stdin root
+setenforce 0
+hostnamectl set-hostname openstack.lw.com
+vim /etc/hosts
 yum install openstack-packstack -y
 
 packstack --gen-answer-file=setup.txt
